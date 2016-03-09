@@ -61,6 +61,7 @@ class LogBot(irc.IRCClient):
     		to_add = str(item)[0:(len(item)-1)] 
     		self.listofplayers.append(to_add)
     	print "Crashed but recovered %s" % (str(self.listofplayers))
+    	self.list_open = True
 
         irc.IRCClient.connectionMade(self)
         self.logger = MessageLogger(open(self.factory.filename, "a"))
@@ -124,17 +125,34 @@ class LogBot(irc.IRCClient):
             	helpmsg = "To join the playing list use '!join', to leave the playing list use '!leave' and to show the current playing list use '!list'."
             	self.msg(channel, str(helpmsg))
             elif msg == "!join":
-            	if (str(user)).lower() in self.listofplayers:
+                if (str(user)).lower() in self.listofplayers:
                     print "idk"
                 else:
-                    self.listofplayers.append((str(user)).lower())
-                    self.msg(channel, str(user).lower() + " has been added.")
+                    if self.list_open:
+                        self.listofplayers.append((str(user)).lower())
+                        self.msg(channel, str(user).lower() + " has been added.")
+                    elif (not self.list_open):
+                        themsg = "Sorry " + user + " but the list is currently closed."
+                        self.msg(channel, themsg)
+                    else:
+                    	pass
             elif msg == "!leave":
                 if (str(user)).lower() in self.listofplayers:
                     self.listofplayers.remove((str(user)).lower())
                     self.msg(channel, str(user).lower() + " has left the list.")
                 else:
                     pass
+
+            elif msg == "!openlist":
+            	if not self.list_open:
+            		self.list_open = True
+            		self.msg(channel, "The list has now been opened, type !join to join the list!.")
+            elif msg == "!closelist":
+            	if self.list_open:
+            		self.list_open = False
+            		self.msg(channel, "The list has now been closed, the !join command is now disabled.")
+            	else:
+            		pass
         else:
             if msg == "!list":
             	if len(self.listofplayers) == 0:
@@ -151,8 +169,12 @@ class LogBot(irc.IRCClient):
                 if (str(user)).lower() in self.listofplayers:
                     print "idk"
                 else:
-                    self.listofplayers.append((str(user)).lower())
-                    self.msg(channel, str(user).lower() + " has been added.")
+                    if self.list_open:
+                        self.listofplayers.append((str(user)).lower())
+                        self.msg(channel, str(user).lower() + " has been added.")
+                    elif not self.list_open:
+                        themsg = "Sorry " + user + " but the list is currently closed."
+                        self.msg(channel, themsg)
             elif msg == "!leave":
                 if (str(user)).lower() in self.listofplayers:
                     self.listofplayers.remove((str(user)).lower())
