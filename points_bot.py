@@ -24,6 +24,7 @@ import json
 import time, sys
 import threading
 from datetime import date, datetime, timedelta
+import random
 
 listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch", "rawandsuch", "ggjeffles"]
 
@@ -56,12 +57,15 @@ class LogBot(irc.IRCClient):
     def connectionMade(self):
     	self.jfilename = "player_points.json"
     	self.interval_players = []
+        self.gamble_players = []
     	loadfile = open(self.jfilename, 'r')
     	self.player_points = json.load(loadfile)
     	loadfile.close()
-    	self.commands = ["!mypoints", "!allpoints", "!store"]
+    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble"]
     	intervals = threading.Thread(target=self.do_interval)
     	intervals.start()
+        gamble_intervals = threading.Thread(target=self.do_gamble_interval)
+        gamble_intervals.start()
         irc.IRCClient.connectionMade(self)
         self.logger = MessageLogger(open(self.factory.filename, "a"))
         self.logger.log("[connected at %s]" % 
@@ -119,9 +123,19 @@ class LogBot(irc.IRCClient):
     	while True:
     		time.sleep(300)
     		self.interval(5)
+
+    def gamble_interval(self):
+        self.gamble_players = []
+
+    def do_gamble_interval(self):
+        while True:
+            time.sleep(300)
+            print "Gamble timeout reset now!"
+            self.gamble_interval()
+
     def docommand(self, channel, user, message):
     	this_command = str(message)
-    	this_user = str(user)
+    	this_user = str(user).lower()
     	if this_command == "!mypoints":
     		if not this_user in self.player_points.keys():
     			str_send = "Sorry %s you haven't earned any points just yet, keep watching and commenting to recieve points" % (this_user)
@@ -134,13 +148,44 @@ class LogBot(irc.IRCClient):
     	elif this_command == "!allpoints":
     		this_msg = str(self.player_points)
     		self.msg(channel, this_msg)
+        
+        elif this_command.split(" ")[0] == "!gamble":
+            if len(this_command.split(" ")) == 2:
+                crit = True
+                nums = ["1","2","3","4","5","6","7","8","9","0"]
+                for item in str(this_command.split(" ")[1]):
+                    if not item in nums:
+                        crit = False
+                if crit:
+                    self.gamble(channel, this_user, this_command)
 
-
-
+    def gamble(self, channel, this_user, this_command):
+        gamble_amount = int(this_command.split(" ")[1])
+        if (this_user in self.player_points.keys()) and (int(self.player_points[this_user]) >= gamble_amount):
+            if this_user in self.gamble_players:
+                to_send = "Sorry %s, you have gambled too recently, try again in a few minutes" % (this_user)
+                self.msg(channel, to_send)
+            else:
+                random_number = random.randint(0, 100)
+                if random_number > 49:
+                    self.player_points[this_user] = self.player_points[this_user] + (gamble_amount)
+                    self.gamble_players.append(this_user)
+                    to_send = "Congratulations %s, you have won %s points with a roll of %s!" % (this_user, str(gamble_amount), str(random_number))
+                    self.msg(channel, to_send)
+                else:
+                    self.player_points[this_user] = self.player_points[this_user] - (gamble_amount)
+                    self.gamble_players.append(this_user)
+                    to_send = "Sorry, %s you have lost %s points with a roll of %s." % (this_user, str(gamble_amount), str(random_number))
+                    self.msg(channel, to_send)
+        else:
+            to_send = "Sorry %s, you do not have enough points for this gamble, type !mypoints to see your points." % (this_user)
+            self.msg(channel, to_send)
+        self.jfile = open(self.jfilename, 'w')
+        json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+        self.jfile.close()
 
 class LogBotFactory(protocol.ClientFactory):
     """A factory for LogBots.
-
     A new protocol instance will be created each time we connect to the server.
     """
 
