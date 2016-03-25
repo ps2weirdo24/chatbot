@@ -26,7 +26,7 @@ import threading
 from datetime import date, datetime, timedelta
 import random
 
-listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch", "rawandsuch", "ggjeffles"]
+listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
 
 NICKNAME = "elmagnificobot"
 PASSWORD = "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd"
@@ -61,7 +61,7 @@ class LogBot(irc.IRCClient):
     	loadfile = open(self.jfilename, 'r')
     	self.player_points = json.load(loadfile)
     	loadfile.close()
-    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble"]
+    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble", "!award"]
     	intervals = threading.Thread(target=self.do_interval)
     	intervals.start()
         gamble_intervals = threading.Thread(target=self.do_gamble_interval)
@@ -158,6 +158,20 @@ class LogBot(irc.IRCClient):
                         crit = False
                 if crit:
                     self.gamble(channel, this_user, this_command)
+        elif (this_command.split(" ")[0] == "!award") and (this_user in listofmods):
+            if len(this_command.split(" ")) == 3:
+                _, awarduser, num_points = this_command.split(" ")
+                awarduser = awarduser.lower()
+                if awarduser in self.player_points.keys():
+                    self.player_points[awarduser] = self.player_points[awarduser] + int(num_points)
+                elif not awarduser in self.player_points.keys():
+                    self.player_points[awarduser] = int(num_points)
+                msg_to_send = "Congratulations %s, you have recieved %s points from %s! Type !mypoints to see your new point balance." % (awarduser, str(num_points), this_user)
+                self.msg(channel, msg_to_send)
+        self.jfile = open(self.jfilename, 'w')
+        json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+        self.jfile.close()    
+
 
     def gamble(self, channel, this_user, this_command):
         gamble_amount = int(this_command.split(" ")[1])
@@ -170,7 +184,7 @@ class LogBot(irc.IRCClient):
                 if random_number > 49:
                     self.player_points[this_user] = self.player_points[this_user] + (gamble_amount)
                     self.gamble_players.append(this_user)
-                    to_send = "Congratulations %s, you have won %s points with a roll of %s!" % (this_user, str(gamble_amount), str(random_number))
+                    to_send = "Congratulations %s, you have won %s points with a roll of %s! ElTaco" % (this_user, str(gamble_amount), str(random_number))
                     self.msg(channel, to_send)
                 else:
                     self.player_points[this_user] = self.player_points[this_user] - (gamble_amount)
@@ -178,7 +192,7 @@ class LogBot(irc.IRCClient):
                     to_send = "Sorry, %s you have lost %s points with a roll of %s." % (this_user, str(gamble_amount), str(random_number))
                     self.msg(channel, to_send)
         else:
-            to_send = "Sorry %s, you do not have enough points for this gamble, type !mypoints to see your points." % (this_user)
+            to_send = "Sorry %s, you do not have enough points for this gamble, type !mypoints to see your points. ElRip" % (this_user)
             self.msg(channel, to_send)
         self.jfile = open(self.jfilename, 'w')
         json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
