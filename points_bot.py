@@ -1,18 +1,4 @@
 #!/usr/bin/env python
-#Username = DrunkandSuch
-#Password = ps2weirdo24
-#AppName = mychatbot
-#Redirect URL = http://www.ryangaudy.pythonanywhere.com
-#Client ID = b69qxr73yp8w2qzndu0uf33kfcg4ej7
-#Client Secret = k52i0txi4yznjvgs8wi4a40gb8xfaij
-#Oauth = oauth:3kf2n0z24rg5ghttypstftudjt2huk
-
-# Username elmagnificobot
-# Pass ps2weirdo24
-# Client ID dvddixl07tdgner32kxn02m1z9dybpn
-# Client Secret q1fpco46rbgv9jnr0ldmw2u61jf81h9
-# oath oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd
-
 
 # twisted imports
 from twisted.words.protocols import irc
@@ -26,10 +12,23 @@ import threading
 from datetime import date, datetime, timedelta
 import random
 
+"""
+Taco command > Bot announces bet is starting > X minutes to place bets >
+betting ends, bot announces end and odds > Taco command for winner > 
+bot announces winner and deals with points
+
+(mod command)!startbet <betname1> <betname2> 
+!bet <betname> <number of points>
+!winner <betname>
+
+thedict = {"betname1":{"player1": intbet,...},"betname2":{...}}
+"""
+
 listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
 
 NICKNAME = "elmagnificobot"
 PASSWORD = "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd"
+
 
 class MessageLogger:
     """
@@ -55,13 +54,20 @@ class LogBot(irc.IRCClient):
     password = PASSWORD
 
     def connectionMade(self):
+        #betting
+        self.betname1 = ""
+        self.betname2 = ""
+        self.is_bet_active = False
+        self.is_taking_bets = False
+        self.betting_dict = {}
+    	#betting
     	self.jfilename = "player_points.json"
     	self.interval_players = []
         self.gamble_players = []
     	loadfile = open(self.jfilename, 'r')
     	self.player_points = json.load(loadfile)
     	loadfile.close()
-    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble", "!award"]
+    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble", "!award", "!startbet", "!bet", "!winner"]
     	intervals = threading.Thread(target=self.do_interval)
     	intervals.start()
         gamble_intervals = threading.Thread(target=self.do_gamble_interval)
@@ -124,6 +130,11 @@ class LogBot(irc.IRCClient):
     		time.sleep(300)
     		self.interval(5)
 
+    def end_taking_bets(self, channel, betname1, betname2):
+        self.is_taking_bets = False
+        to_send = "Betting has ended for %s vs %s, points will be distributed once a winner is announced!" % (str(betname1), str(betname2))
+        self.msg(channel, to_send)
+
     def gamble_interval(self):
         self.gamble_players = []
 
@@ -168,10 +179,80 @@ class LogBot(irc.IRCClient):
                     self.player_points[awarduser] = int(num_points)
                 msg_to_send = "Congratulations %s, you have recieved %s points from %s! Type !mypoints to see your new point balance." % (awarduser, str(num_points), this_user)
                 self.msg(channel, msg_to_send)
+            self.jfile = open(self.jfilename, 'w')
+            json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+            self.jfile.close()
+        elif (this_command.split(" ")[0] == "!startbet") and (this_user in listofmods):
+            if (len(this_command.split(" ")) == 3) and (not self.is_bet_active):
+                self.betname1 = this_command.split(" ")[1].lower()
+                self.betname2 = this_command.split(" ")[2].lower()
+                self.is_bet_active = True
+                self.betting_dict[self.betname1] = {}
+                self.betting_dict[self.betname2] = {}
+                self.is_taking_bets = True
+                accept_bets = threading.Timer(120, self.end_taking_bets, args=[channel,self.betname1,self.betname2]) 
+                accept_bets.start()
+                this_warning = "30 seconds left to bet for either '%s' or '%s'!" % (self.betname1, self.betname2)
+                warning_message = threading.Timer(90, self.msg, args=[channel, this_warning])
+                warning_message.start()
+                to_send = "Betting has begun for %s vs %s, type '!bet <%s or %s> <amount of points>' to place a bet!" % (self.betname1, self.betname2, self.betname1, self.betname2)
+                self.msg(channel, to_send)
+        elif this_command.split(" ")[0] == "!bet" and self.is_taking_bets:
+            if this_user in self.player_points and len(this_command.split(" ")) == 3:
+                if (this_user not in self.betting_dict[self.betname1].keys()) and (this_user not in self.betting_dict[self.betname2].keys()):
+                    bet_amount = int(this_command.split(" ")[2])
+                    thisbetname = str(this_command.split(" ")[1]).lower()
+                    if self.player_points[this_user] >= bet_amount and bet_amount >= 10:
+                        if thisbetname in self.betting_dict.keys():
+                            self.betting_dict[thisbetname][this_user] = bet_amount
+                            self.player_points[this_user] = self.player_points[this_user] - bet_amount
+                            to_send = "%s has placed a bet of %s points on '%s'" % (this_user, str(bet_amount), thisbetname)
+                            self.msg(channel, to_send)
+                            self.jfile = open(self.jfilename, 'w')
+                            json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+                            self.jfile.close()
+                        else:
+                            to_send = "Sorry, %s '%s' is not an option for the current bet. Current options are %s or %s" % (this_user, str(thisbetname), self.betname1, self.betname2)
+                            self.msg(channel, to_send)
+                    else:
+                        to_send = "Sorry, %s you don't have that many points or have tried to bet less than the minimum bet (10 points)" % (str(this_user))
+                        self.msg(channel, to_send)
+                else:
+                    to_send = "Sorry %s you have already placed a bet" % (this_user)
+                    self.msg(channel, to_send)
+        elif this_command.split(" ")[0] == "!winner" and this_user in listofmods:
+            if (self.is_bet_active) and (len(this_command.split(" ")) == 2):
+                betname_winner = this_command.split(" ")[1].lower()
+                if betname_winner in self.betting_dict.keys():
+                    self.handleWinner(channel, betname_winner)
+                else:
+                    to_send = "The winner %s was not one of the valid options for this bet, try '%s' or '%s'" % (betname_winner, self.betname1, self.betname2)
+                    self.msg(channel, to_send)
+
+    def handleWinner(self, channel, betname_winner):
+        total_pot = 0
+        winning_bet_pot = 0
+        for item in self.betting_dict[self.betname1]:
+            total_pot = total_pot + self.betting_dict[self.betname1][item]
+        for item in self.betting_dict[self.betname2]:
+            total_pot = total_pot + self.betting_dict[self.betname2][item]
+        for item in self.betting_dict[betname_winner]:
+            winning_bet_pot = winning_bet_pot + self.betting_dict[betname_winner][item]
+        if total_pot == 0:
+            pass
+        else:
+            for item in self.betting_dict[betname_winner]:
+                this_bet = self.betting_dict[betname_winner][item]
+                points_won = (this_bet * total_pot) / winning_bet_pot
+                self.player_points[item] = self.player_points[item] + int(points_won)
+        self.is_bet_active = False
+        self.is_taking_bets = False
+        self.betting_dict = {}
         self.jfile = open(self.jfilename, 'w')
         json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
-        self.jfile.close()    
-
+        self.jfile.close()
+        to_send = "And the winner is... %s! Points have now been awarded. Type !mypoints to check your new balance!" % (betname_winner)
+        self.msg(channel, to_send)
 
     def gamble(self, channel, this_user, this_command):
         gamble_amount = int(this_command.split(" ")[1])
@@ -252,3 +333,4 @@ class ChatCollector:
 if __name__ == "__main__":
     mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
     mybot.start_forever()
+
