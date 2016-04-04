@@ -11,6 +11,7 @@ import time, sys
 import threading
 from datetime import date, datetime, timedelta
 import random
+import os
 
 """
 Taco command > Bot announces bet is starting > X minutes to place bets >
@@ -22,6 +23,11 @@ bot announces winner and deals with points
 !winner <betname>
 
 thedict = {"betname1":{"player1": intbet,...},"betname2":{...}}
+
+================ store formatting ===========
+
+Taco Sticker - price is 5000 points, to buy one type '!buy sticker' / $10 Nintendo
+
 """
 
 listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
@@ -29,6 +35,17 @@ listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
 NICKNAME = "elmagnificobot"
 PASSWORD = "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd"
 
+the_store = {"sticker":{"name":"Taco Sticker", "price":5000},
+             "giftcard":{"name":"$10 Nintendo Gift Card", "price":8500}}
+
+# create order file if not found and format it
+this_order_file = "orders.txt"
+if this_order_file in os.listdir(os.getcwd()):
+    pass
+else:
+    thefile = open(this_order_file, "a")
+    thefile.write("================ Orders ================\n")
+    thefile.close()
 
 class MessageLogger:
     """
@@ -54,22 +71,27 @@ class LogBot(irc.IRCClient):
     password = PASSWORD
 
     def connectionMade(self):
+        #orders
+        self.orderfile = this_order_file
+        #orders
         #betting
         self.betname1 = ""
         self.betname2 = ""
         self.is_bet_active = False
         self.is_taking_bets = False
         self.betting_dict = {}
-    	#betting
-    	self.jfilename = "player_points.json"
-    	self.interval_players = []
+        #betting
+        self.jfilename = "player_points.json"
+        self.interval_players = []
         self.gamble_players = []
-    	loadfile = open(self.jfilename, 'r')
-    	self.player_points = json.load(loadfile)
-    	loadfile.close()
-    	self.commands = ["!mypoints", "!allpoints", "!store", "!gamble", "!award", "!startbet", "!bet", "!winner"]
-    	intervals = threading.Thread(target=self.do_interval)
-    	intervals.start()
+        loadfile = open(self.jfilename, 'r')
+        self.player_points = json.load(loadfile)
+        loadfile.close()
+        self.commands = ["!mypoints", "!allpoints", "!store", "!gamble",
+                         "!award", "!startbet", "!bet", "!winner", "!buy",
+                         "!take"]
+        intervals = threading.Thread(target=self.do_interval)
+        intervals.start()
         gamble_intervals = threading.Thread(target=self.do_gamble_interval)
         gamble_intervals.start()
         irc.IRCClient.connectionMade(self)
@@ -102,9 +124,9 @@ class LogBot(irc.IRCClient):
         user = user.split('!', 1)[0]
         self.logger.log("<%s> %s" % (user, msg))
         if msg.split(" ")[0] in self.commands:
-        	self.docommand(channel, user.lower(), str(msg))
+            self.docommand(channel, user.lower(), str(msg))
         if not user.lower() in self.interval_players:
-        	self.interval_players.append(str(user.lower()))
+            self.interval_players.append(str(user.lower()))
         if not self.factory.silent_console:
             print (user, msg) 
 
@@ -114,21 +136,21 @@ class LogBot(irc.IRCClient):
         self.logger.log("* %s %s" % (user, msg))
 
     def interval(self, points):
-    	for item in self.interval_players:
-    		if item in self.player_points.keys():
-    			self.player_points[item] += int(points)
-    		else:
-    			self.player_points[item] = int(points)
-    	self.interval_players = []
-    	self.jfile = open(self.jfilename, 'w')
-    	json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
-    	self.jfile.close()
-    	print "Points Awarded!"
+        for item in self.interval_players:
+            if item in self.player_points.keys():
+                self.player_points[item] += int(points)
+            else:
+                self.player_points[item] = int(points)
+        self.interval_players = []
+        self.jfile = open(self.jfilename, 'w')
+        json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+        self.jfile.close()
+        print "Points Awarded!"
 
     def do_interval(self):
-    	while True:
-    		time.sleep(300)
-    		self.interval(5)
+        while True:
+            time.sleep(300)
+            self.interval(5)
 
     def end_taking_bets(self, channel, betname1, betname2):
         self.is_taking_bets = False
@@ -145,20 +167,20 @@ class LogBot(irc.IRCClient):
             self.gamble_interval()
 
     def docommand(self, channel, user, message):
-    	this_command = str(message)
-    	this_user = str(user).lower()
-    	if this_command == "!mypoints":
-    		if not this_user in self.player_points.keys():
-    			str_send = "Sorry %s you haven't earned any points just yet, keep watching and commenting to recieve points" % (this_user)
-    			self.msg(channel, str_send)
-    		else:
-    			this_points = str(self.player_points[this_user])
-    			str_send = "%s's points: %s" % (this_user, this_points)
-    			self.msg(channel, str_send)
-    	
-    	elif this_command == "!allpoints":
-    		this_msg = str(self.player_points)
-    		self.msg(channel, this_msg)
+        this_command = str(message)
+        this_user = str(user).lower()
+        if this_command == "!mypoints":
+            if not this_user in self.player_points.keys():
+                str_send = "Sorry %s you haven't earned any points just yet, keep watching and commenting to recieve points" % (this_user)
+                self.msg(channel, str_send)
+            else:
+                this_points = str(self.player_points[this_user])
+                str_send = "%s's points: %s" % (this_user, this_points)
+                self.msg(channel, str_send)
+        
+        elif this_command == "!allpoints":
+            this_msg = str(self.player_points)
+            self.msg(channel, this_msg)
         
         elif this_command.split(" ")[0] == "!gamble":
             if len(this_command.split(" ")) == 2:
@@ -182,6 +204,21 @@ class LogBot(irc.IRCClient):
             self.jfile = open(self.jfilename, 'w')
             json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
             self.jfile.close()
+        elif (this_command.split(" ")[0] == "!take") and (this_user in listofmods):
+            if len(this_command.split(" ")) == 3:
+                _, awarduser, num_points = this_command.split(" ")
+                awarduser = awarduser.lower()
+                if (awarduser in self.player_points.keys()) and (self.player_points[awarduser] >= int(num_points)):
+                    self.player_points[awarduser] = self.player_points[awarduser] - int(num_points)
+                    to_send = "Sorry %s, you have had %s taken away by %s. Type !mypoints to see your new point balance." % (awarduser, str(num_points), this_user)
+                    self.msg(channel, to_send)
+                else:
+                    to_send = "The user '%s' was either not found in the database or does not have %s points." % (awarduser, str(num_points))
+                    self.msg(channel, to_send)
+                self.jfile = open(self.jfilename, 'w')
+                json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+                self.jfile.close()
+
         elif (this_command.split(" ")[0] == "!startbet") and (this_user in listofmods):
             if (len(this_command.split(" ")) == 3) and (not self.is_bet_active):
                 self.betname1 = this_command.split(" ")[1].lower()
@@ -228,6 +265,30 @@ class LogBot(irc.IRCClient):
                 else:
                     to_send = "The winner %s was not one of the valid options for this bet, try '%s' or '%s'" % (betname_winner, self.betname1, self.betname2)
                     self.msg(channel, to_send)
+        elif this_command.lower() == "!store":
+            """
+            Taco Sticker - price is 5000 points, to buy one type '!buy sticker' / $10 Nintendo
+            """
+            final_to_send = ""
+            final_count = len(the_store)
+            this_counter = 1
+            for item in the_store:
+                the_name = the_store[item]["name"]
+                price = the_store[item]["price"]
+                to_add = "%s - price is %s points, to buy one type '!buy %s'" % (str(the_name), str(price), str(item))
+                if this_counter < final_count:
+                    to_add = to_add + " / "
+                this_counter = this_counter + 1
+                final_to_send = final_to_send + to_add
+            self.msg(channel, final_to_send)
+        elif (this_command.split(" ")[0] == "!buy") and (len(this_command.split(" ")) == 2):
+            to_buy = this_command.split(" ")[1]
+            if str(to_buy) in the_store.keys():
+                self.handlePurchase(channel, this_user, this_command)
+            else:
+                to_send = "Sorry, %s '%s' is not in the store, try typing '!store' to view the current store." % (str(this_user), str(to_buy))
+                self.msg(channel, to_send)
+
 
     def handleWinner(self, channel, betname_winner):
         total_pot = 0
@@ -274,6 +335,28 @@ class LogBot(irc.IRCClient):
                     self.msg(channel, to_send)
         else:
             to_send = "Sorry %s, you do not have enough points for this gamble, type !mypoints to see your points. ElRip" % (this_user)
+            self.msg(channel, to_send)
+        self.jfile = open(self.jfilename, 'w')
+        json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
+        self.jfile.close()
+
+    def handlePurchase(self, channel, this_user, this_command):
+        to_buy = this_command.split(" ")[1]
+        price = int(the_store[to_buy]["price"])
+        name = str(the_store[to_buy]["name"])
+        if (this_user in self.player_points.keys()) and (self.player_points[this_user] >= price):
+            self.player_points[this_user] = self.player_points[this_user] - price
+            timedate = datetime.now()
+            the_format = "%H:%M:%S %b %d %Y"
+            strdate = timedate.strftime(the_format)
+            to_save = "Order:\n\tUser: %s\n\tItem: %s\n\tPrice: %s\n\tDate/Time: %s\n\n" % (this_user, the_store[to_buy]["name"], str(price), str(strdate))
+            orderfile = open(self.orderfile, 'a')
+            orderfile.write(to_save)
+            orderfile.close()
+            to_send = "Thanks %s, you have purchased a %s for %s points!" % (this_user, the_store[to_buy]["name"], str(price))
+            self.msg(channel, to_send)
+        else:
+            to_send = "Sorry, %s but you don't have enough points to buy '%s', try typing '!mypoints' to view your points." % (this_user, name)
             self.msg(channel, to_send)
         self.jfile = open(self.jfilename, 'w')
         json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
