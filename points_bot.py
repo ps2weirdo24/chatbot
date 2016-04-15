@@ -13,6 +13,9 @@ from datetime import date, datetime, timedelta
 import random
 import os
 
+# my own imports
+from followers import follow_try
+
 """
 Taco command > Bot announces bet is starting > X minutes to place bets >
 betting ends, bot announces end and odds > Taco command for winner > 
@@ -71,6 +74,12 @@ class LogBot(irc.IRCClient):
     password = PASSWORD
 
     def connectionMade(self):
+        #followers
+        self.channel = "#elmagnificotaco"
+        self.follow_handle = follow_try.FollowHandler("elmagnificotaco")
+        follow_thread = threading.Thread(target=self.follower_check)
+        follow_thread.start()
+        #followers
         #orders
         self.orderfile = this_order_file
         #orders
@@ -128,7 +137,7 @@ class LogBot(irc.IRCClient):
         if not user.lower() in self.interval_players:
             self.interval_players.append(str(user.lower()))
         if not self.factory.silent_console:
-            print (user, msg) 
+            print (user, msg, channel) 
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
@@ -151,6 +160,16 @@ class LogBot(irc.IRCClient):
         while True:
             time.sleep(300)
             self.interval(5)
+
+    def follower_check(self):
+        new_ones = self.follow_handle.check_new()
+        if new_ones == []:
+            pass
+        else:
+            for item in new_ones:
+                to_send = "We got a new follower! Thanks %s for the follow!" % (str(item))
+                self.msg(self.channel, to_send)
+        time.sleep(30)
 
     def end_taking_bets(self, channel, betname1, betname2):
         self.is_taking_bets = False
