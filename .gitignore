@@ -63,4 +63,4 @@ target/
 
 #Text files and json files
 *.txt
-*.json
+player_points.json
