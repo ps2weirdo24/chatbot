@@ -136,6 +136,9 @@ class LogBot(irc.IRCClient):
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
         self.logger = MessageLogger(open(self.factory.filename, "a"))
+        self.is_raffle_active = False
+    	self.amount_for_raffle = 0
+    	self.raffle_list = []
         #followers
         self.channel = "#elmagnificotaco"
         self.follow_handle = FollowHandler("elmagnificotaco")
@@ -160,7 +163,7 @@ class LogBot(irc.IRCClient):
         loadfile.close()
         self.commands = ["!mypoints", "!allpoints", "!store", "!gamble",
                          "!award", "!startbet", "!bet", "!winner", "!buy",
-                         "!take"]
+                         "!take", "!startraffle", "!raffle", "!endraffle"]
         intervals = threading.Thread(target=self.do_interval)
         intervals.start()
         gamble_intervals = threading.Thread(target=self.do_gamble_interval)
@@ -371,7 +374,53 @@ class LogBot(irc.IRCClient):
             else:
                 to_send = "Sorry, %s '%s' is not in the store, try typing '!store' to view the current store." % (str(this_user), str(to_buy))
                 self.msg(channel, to_send)
+        elif (this_command.split(" ")[0] == "!startraffle") and (this_user in listofmods):
+        	amount_for_one = int(this_command.split(" ")[1])
+        	self.start_raffle(channel, amount_for_one)
+        elif (this_command.split(" ")[0] == "!endraffle") and (this_user in listofmods):
+        	if self.is_raffle_active:
+        		self.end_raffle(channel)
+        	else:
+        		to_send = "There are no active raffles."
+        elif (this_command.split(" ")[0] == "!raffle") and (this_user in self.player_points.keys()):
+        	if (len(this_command.split(" ")) == 2) and (self.player_points[this_user] >= float(this_command.split(" ")[1])):
+        		self.do_raffle(channel, this_user, int(this_command.split(" ")[1]))
 
+
+    def end_raffle(self, channel):
+    	amount_of_people = len(self.raffle_list)
+    	winning_number = random.randint(0, (amount_of_people - 1))
+    	winner = self.raffle_list[winning_number]
+    	to_send = "Congratulations %s, you won the raffle!" % (str(winner))
+    	self.msg(channel, to_send)
+    	self.is_raffle_active = False
+
+    def do_raffle(self, channel, this_user, tickets):
+    	amount_to_pay = float(tickets) * self.amount_for_raffle  
+    	if (tickets % 1 != 0):
+    		to_send = "Sorry %s but you must use whole numbers when buying tickets" % (str(this_user))
+    		self.msg(channel, to_send)
+    	elif (amount_to_pay > self.player_points[this_user]):
+    		to_send = "Sorry, %s but you don't have enough points to buy those tickets. Try using '!mypoints' to view your points." % (str(this_user))
+    		self.msg(channel, to_send)
+    	else:
+    		self.player_points[this_user] = self.player_points[this_user] - int(amount_to_pay)
+    		to_send = "Thanks %s, you now have %s more chances to win the raffle" % (this_user, str(tickets))
+    		self.msg(channel, to_send)
+    		for item in range(tickets):
+    			self.raffle_list.append(this_user)
+
+    def start_raffle(self, channel, amount):
+    	if self.is_raffle_active:
+    		to_send = "There is already an active raffle!"
+    		self.msg(channel, to_send)
+    	else:
+    	    self.amount_for_raffle = int(amount)
+    	    self.raffle_list = []
+    	    if amount > 0:
+    		    self.is_raffle_active = True
+    		    to_send = "A raffle has begun, each raffle ticket is %s points to buy. To buy a ticket type '!raffle <amount of tickets>'." % (str(amount))
+    		    self.msg(channel, to_send)
 
     def handleWinner(self, channel, betname_winner):
         total_pot = 0
