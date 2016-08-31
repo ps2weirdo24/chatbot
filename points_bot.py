@@ -22,17 +22,12 @@ requests.packages.urllib3.disable_warnings()
 Taco command > Bot announces bet is starting > X minutes to place bets >
 betting ends, bot announces end and odds > Taco command for winner > 
 bot announces winner and deals with points
-
 (mod command)!startbet <betname1> <betname2> 
 !bet <betname> <number of points>
 !winner <betname>
-
 thedict = {"betname1":{"player1": intbet,...},"betname2":{...}}
-
 ================ store formatting ===========
-
 Taco Sticker - price is 5000 points, to buy one type '!buy sticker' / $10 Nintendo
-
 """
 
 listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
@@ -236,6 +231,10 @@ class LogBot(irc.IRCClient):
                     to_send = "We got a new follower! Thanks %s for the follow!" % (str(item))
                     self.msg(self.channel, to_send)
                     print "FOLLOW"
+                    if item in player_points.keys():
+                    	player_points[item] = player_points[item] + 10
+                    else:
+                    	player_points[item] = 10
             time.sleep(30)
 
     def end_taking_bets(self, channel, betname1, betname2):
@@ -547,5 +546,4 @@ class ChatCollector:
 
 if __name__ == "__main__":
     mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
-    mybot.start_forever()
-
+mybot.start_forever()
