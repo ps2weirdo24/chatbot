@@ -23,15 +23,20 @@ from twisted.python import log
 import time, sys
 import threading
 from datetime import date, datetime, timedelta
+import json
 
 print("LIST BOT")
 
-listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch", "rawandsuch", "ggjeffles"]
+options_file = open("options.json", "r")
+loaded_options = json.load(options_file)
+options_file.close()
 
+#listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch", "rawandsuch", "ggjeffles"]
+listofmods = list(loaded_options["options"]["listofmods"])
 #globself.listofplayers = ["testplayer1", "testplayer2", "testplayer3"]
 
-NICKNAME = "elmagnificobot"
-PASSWORD = "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd"
+NICKNAME = str(loaded_options["options"]["nickname"])
+PASSWORD = str(loaded_options["options"]["password"])
 
 class MessageLogger:
     """
@@ -250,5 +255,5 @@ class ChatCollector:
         reactor.run()
 
 if __name__ == "__main__":
-    mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
+    mybot = ChatCollector(str(loaded_options["options"]["channel"]), str(loaded_options["options"]["log_file_name"]), 1800, silent_console=False)
     mybot.start_forever()
