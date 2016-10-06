@@ -22,21 +22,43 @@ requests.packages.urllib3.disable_warnings()
 Taco command > Bot announces bet is starting > X minutes to place bets >
 betting ends, bot announces end and odds > Taco command for winner > 
 bot announces winner and deals with points
+
 (mod command)!startbet <betname1> <betname2> 
 !bet <betname> <number of points>
 !winner <betname>
+
 thedict = {"betname1":{"player1": intbet,...},"betname2":{...}}
+
 ================ store formatting ===========
+
 Taco Sticker - price is 5000 points, to buy one type '!buy sticker' / $10 Nintendo
+
 """
 
-listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
+print("POINTS BOT")
 
-NICKNAME = "elmagnificobot"
-PASSWORD = "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd"
 
-the_store = {"sticker":{"name":"Taco Sticker", "price":5000},
-             "giftcard":{"name":"$10 Nintendo Gift Card", "price":8500}}
+options_file = open("options.json", "r")
+loaded_options = json.load(options_file)
+options_file.close()
+
+listofmods = list(loaded_options["options"]["listofmods"])
+
+list_of_active_commands = []
+
+for item in loaded_options["active_commands"]:
+    if loaded_options["active_commands"][str(item)]:
+        list_of_active_commands.append(str(item))
+    else:
+        pass
+
+#print(list_of_active_commands)
+#listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch"]
+
+NICKNAME = str(loaded_options["options"]["nickname"])
+PASSWORD = str(loaded_options["options"]["password"])
+
+the_store = dict(loaded_options["store"])
 
 # create order file if not found and format it
 this_order_file = "orders.txt"
@@ -47,7 +69,7 @@ else:
     thefile.write("================ Orders ================\n")
     thefile.close()
 
-client_id = "b69qxr73yp8w2qzndu0uf33kfcg4ej7"
+client_id = str(loaded_options["options"]["client_id"])
 head = {"client-id": client_id}
 
 
@@ -132,8 +154,8 @@ class LogBot(irc.IRCClient):
         irc.IRCClient.connectionMade(self)
         self.logger = MessageLogger(open(self.factory.filename, "a"))
         self.is_raffle_active = False
-    	self.amount_for_raffle = 0
-    	self.raffle_list = []
+        self.amount_for_raffle = 0
+        self.raffle_list = []
         #followers
         self.channel = "#elmagnificotaco"
         self.follow_handle = FollowHandler("elmagnificotaco")
@@ -156,9 +178,10 @@ class LogBot(irc.IRCClient):
         loadfile = open(self.jfilename, 'r')
         self.player_points = json.load(loadfile)
         loadfile.close()
-        self.commands = ["!mypoints", "!allpoints", "!store", "!gamble",
+        """self.commands = ["!mypoints", "!allpoints", "!store", "!gamble",
                          "!award", "!startbet", "!bet", "!winner", "!buy",
-                         "!take", "!startraffle", "!raffle", "!endraffle"]
+                         "!take", "!startraffle", "!raffle", "!endraffle"]"""
+        self.commands = list_of_active_commands
         intervals = threading.Thread(target=self.do_interval)
         intervals.start()
         gamble_intervals = threading.Thread(target=self.do_gamble_interval)
@@ -168,7 +191,7 @@ class LogBot(irc.IRCClient):
         self.logger.log("[connected at %s]" % 
                         time.asctime(time.localtime(time.time())))
         if not self.factory.silent_console:
-            print "Connected!"
+            print("Connected!")
 
     def connectionLost(self, reason):
         irc.IRCClient.connectionLost(self, reason)
@@ -176,13 +199,13 @@ class LogBot(irc.IRCClient):
                         time.asctime(time.localtime(time.time())))
         self.logger.close()
         if not self.factory.silent_console:
-            print "Disconnected!"
+            print("Disconnected!")
 
     def signedOn(self):
         """Called when bot has succesfully signed on to server."""
         self.join(self.factory.channel)
         if not self.factory.silent_console:
-            print "Signed on to the server!"
+            print("Signed on to the server!")
 
     def joined(self, channel):
         """This will get called when the bot joins the channel."""
@@ -214,7 +237,7 @@ class LogBot(irc.IRCClient):
         self.jfile = open(self.jfilename, 'w')
         json.dump(self.player_points, self.jfile, indent=4, sort_keys=True)
         self.jfile.close()
-        print "Points Awarded!"
+        print("Points Awarded!")
 
     def do_interval(self):
         while True:
@@ -230,11 +253,7 @@ class LogBot(irc.IRCClient):
                 for item in new_ones:
                     to_send = "We got a new follower! Thanks %s for the follow!" % (str(item))
                     self.msg(self.channel, to_send)
-                    print "FOLLOW"
-                    if item in player_points.keys():
-                    	player_points[item] = player_points[item] + 10
-                    else:
-                    	player_points[item] = 10
+                    #print "FOLLOW"
             time.sleep(30)
 
     def end_taking_bets(self, channel, betname1, betname2):
@@ -248,7 +267,7 @@ class LogBot(irc.IRCClient):
     def do_gamble_interval(self):
         while True:
             time.sleep(300)
-            print "Gamble timeout reset now!"
+            print("Gamble timeout reset now!")
             self.gamble_interval()
 
     def docommand(self, channel, user, message):
@@ -514,7 +533,7 @@ class LogBotFactory(protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         if not self.factory.silent_console:
-            print "connection failed:", reason
+            print("connection failed:", reason)
         reactor.stop()
 
 
@@ -545,5 +564,6 @@ class ChatCollector:
         reactor.run()
 
 if __name__ == "__main__":
-    mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
-mybot.start_forever()
+    mybot = ChatCollector(str(loaded_options["options"]["channel"]), str(loaded_options["options"]["log_file_name"]), 1800, silent_console=False)
+    mybot.start_forever()
+

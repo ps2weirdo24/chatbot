@@ -1,0 +1,27 @@
+{"options": {"listofmods": ["elmagnificobot", "elmagnificotaco", "drunkandsuch"],
+			 "nickname": "elmagnificobot", 
+			 "password": "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd",
+			 "client_id": "b69qxr73yp8w2qzndu0uf33kfcg4ej7", 
+			 "channel": "elmagnificotaco",
+			 "log_file_name": "tacolog.txt"},
+
+"active_commands": {"!mypoints": true,
+					"!allpoints": true,
+					"!store": true,
+					"!gamble": true,
+					"!award": true,
+					"!startbet": true,
+					"!bet": true,
+					"!winner": true,
+					"!buy": true,
+					"!take": true,
+					"!startraffle": true,
+					"!raffle": true,
+					"!endraffle": true
+					},
+
+"store": {"sticker":{"name":"Taco Sticker", "price":5000},
+          "giftcard":{"name":"$10 Nintendo Gift Card", "price":8500}}
+
+
+}

@@ -24,6 +24,8 @@ import time, sys
 import threading
 from datetime import date, datetime, timedelta
 
+print("LIST BOT")
+
 listofmods = ["elmagnificobot", "elmagnificotaco", "drunkandsuch", "rawandsuch", "ggjeffles"]
 
 #globself.listofplayers = ["testplayer1", "testplayer2", "testplayer3"]
@@ -55,14 +57,13 @@ class LogBot(irc.IRCClient):
     password = PASSWORD
     
     def connectionMade(self):
-    	self.listofplayers = []
-    	recoverfile = open("safetyfile.txt", "r")
-    	for item in recoverfile.readlines():
-    		to_add = str(item)[0:(len(item)-1)] 
-    		self.listofplayers.append(to_add)
-    	print "Crashed but recovered %s" % (str(self.listofplayers))
-    	self.list_open = True
-
+        self.listofplayers = []
+        recoverfile = open("safetyfile.txt", "r")
+        for item in recoverfile.readlines():
+            to_add = str(item)[0:(len(item)-1)] 
+            self.listofplayers.append(to_add)
+        print "Crashed but recovered %s" % (str(self.listofplayers))
+        self.list_open = True
         irc.IRCClient.connectionMade(self)
         self.logger = MessageLogger(open(self.factory.filename, "a"))
         self.logger.log("[connected at %s]" % 
@@ -94,36 +95,36 @@ class LogBot(irc.IRCClient):
         self.logger.log("<%s> %s" % (user, msg))
         if user.lower() in listofmods:
             if msg == "!list":
-            	if len(self.listofplayers) == 0:
-            		self.msg(channel, "The list of players is currently empty, type !join to join it! ElTaco")
-            	else:
-            		count_index = 1
-            		msgtosend = ""
-            		for item in self.listofplayers:
-            			msg = "%s. %s " % (str(count_index), str(item))
-            			count_index = count_index + 1
-            			msgtosend = msgtosend + msg
-                	self.msg(channel, str(msgtosend[:-1]))
+                if len(self.listofplayers) == 0:
+                    self.msg(channel, "The list of players is currently empty, type !join to join it! ElTaco")
+                else:
+                    count_index = 1
+                    msgtosend = ""
+                    for item in self.listofplayers:
+                        msg = "%s. %s " % (str(count_index), str(item))
+                        count_index = count_index + 1
+                        msgtosend = msgtosend + msg
+                    self.msg(channel, str(msgtosend[:-1]))
             elif "!remove" in msg:
                 toremove = msg.split(" ")[1].lower()
                 if toremove in self.listofplayers:
                     self.listofplayers.remove(toremove)
                     self.msg(channel, toremove + " has been removed from the list. ElRip")
             elif msg == "!clearlist":
-            	self.listofplayers = []
+                self.listofplayers = []
                 self.msg(channel, "The list of players has been cleared. ElRip")
             elif msg == "!next":
-            	if len(self.listofplayers) <= 1:
-            		pass
-            	else:
-            		removed = str(self.listofplayers[0])
-            		up_next = str(self.listofplayers[1]) 
-            		self.listofplayers = self.listofplayers[1:]
-            		msg_to_send = "GG %s, %s takes his place! Good luck, have fun! ElTaken" % (removed, up_next)
-            		self.msg(channel, msg_to_send)
+                if len(self.listofplayers) <= 1:
+                    pass
+                else:
+                    removed = str(self.listofplayers[0])
+                    up_next = str(self.listofplayers[1]) 
+                    self.listofplayers = self.listofplayers[1:]
+                    msg_to_send = "GG %s, %s takes his place! Good luck, have fun! ElTaken" % (removed, up_next)
+                    self.msg(channel, msg_to_send)
             elif msg == "!help":
-            	helpmsg = "To join the playing list use '!join', to leave the playing list use '!leave' and to show the current playing list use '!list'. ElTaco"
-            	self.msg(channel, str(helpmsg))
+                helpmsg = "To join the playing list use '!join', to leave the playing list use '!leave' and to show the current playing list use '!list'. ElTaco"
+                self.msg(channel, str(helpmsg))
             elif msg == "!join":
                 if (str(user)).lower() in self.listofplayers:
                     print "idk"
@@ -135,7 +136,7 @@ class LogBot(irc.IRCClient):
                         themsg = "Sorry " + user + " but the list is currently closed. ElRip"
                         self.msg(channel, themsg)
                     else:
-                    	pass
+                        pass
             elif msg == "!leave":
                 if (str(user)).lower() in self.listofplayers:
                     self.listofplayers.remove((str(user)).lower())
@@ -144,27 +145,27 @@ class LogBot(irc.IRCClient):
                     pass
 
             elif msg == "!openlist":
-            	if not self.list_open:
-            		self.list_open = True
-            		self.msg(channel, "The list has now been opened, type !join to join the list!. ElTacoHi")
+                if not self.list_open:
+                    self.list_open = True
+                    self.msg(channel, "The list has now been opened, type !join to join the list!. ElTacoHi")
             elif msg == "!closelist":
-            	if self.list_open:
-            		self.list_open = False
-            		self.msg(channel, "The list has now been closed, the !join command is now disabled. ElRip")
-            	else:
-            		pass
+                if self.list_open:
+                    self.list_open = False
+                    self.msg(channel, "The list has now been closed, the !join command is now disabled. ElRip")
+                else:
+                    pass
         else:
             if msg == "!list":
-            	if len(self.listofplayers) == 0:
-            		self.msg(channel, "The list of players is currently empty, type !join to join it! ElTaco")
-            	else:
-            		count_index = 1
-            		msgtosend = ""
-            		for item in self.listofplayers:
-            			msg = "%s. %s " % (str(count_index), str(item))
-            			count_index = count_index + 1
-            			msgtosend = msgtosend + msg
-                	self.msg(channel, str(msgtosend[:-1]))
+                if len(self.listofplayers) == 0:
+                    self.msg(channel, "The list of players is currently empty, type !join to join it! ElTaco")
+                else:
+                    count_index = 1
+                    msgtosend = ""
+                    for item in self.listofplayers:
+                        msg = "%s. %s " % (str(count_index), str(item))
+                        count_index = count_index + 1
+                        msgtosend = msgtosend + msg
+                    self.msg(channel, str(msgtosend[:-1]))
             elif msg == "!join":
                 if (str(user)).lower() in self.listofplayers:
                     print "idk"
@@ -182,13 +183,13 @@ class LogBot(irc.IRCClient):
                 else:
                     pass
             elif msg == "!help":
-            	helpmsg = "To join the playing list use '!join', to leave the playing list use '!leave' and to show the current playing list use '!list'. ElTaco"
-            	self.msg(channel, str(helpmsg))
+                helpmsg = "To join the playing list use '!join', to leave the playing list use '!leave' and to show the current playing list use '!list'. ElTaco"
+                self.msg(channel, str(helpmsg))
         if not self.factory.silent_console:
             print (user, msg)
         safetyfile = open("safetyfile.txt", "w")
         for item in self.listofplayers:
-        	safetyfile.write(item + "\n")
+            safetyfile.write(item + "\n")
         safetyfile.close()
 
     def action(self, user, channel, msg):
@@ -249,5 +250,5 @@ class ChatCollector:
         reactor.run()
 
 if __name__ == "__main__":
-	mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
-	mybot.start_forever()
+    mybot = ChatCollector("elmagnificotaco", "tacolog.txt", 1800, silent_console=False)
+    mybot.start_forever()
