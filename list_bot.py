@@ -1,17 +1,5 @@
 #!/usr/bin/env python
-#Username = DrunkandSuch
-#Password = ps2weirdo24
-#AppName = mychatbot
-#Redirect URL = http://www.ryangaudy.pythonanywhere.com
-#Client ID = b69qxr73yp8w2qzndu0uf33kfcg4ej7
-#Client Secret = k52i0txi4yznjvgs8wi4a40gb8xfaij
-#Oauth = oauth:3kf2n0z24rg5ghttypstftudjt2huk
 
-# Username elmagnificobot
-# Pass ps2weirdo24
-# Client ID dvddixl07tdgner32kxn02m1z9dybpn
-# Client Secret q1fpco46rbgv9jnr0ldmw2u61jf81h9
-# oath oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd
 
 
 # twisted imports
