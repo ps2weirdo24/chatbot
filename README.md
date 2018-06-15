@@ -1,4 +1,4 @@
-# chatbot
+# Twitch.tv Chatbot
 Personal project to add functionality to Twitch.tv's chat.
 
 This python script can be used to add a comandline bot to a Twtich.tv stream along with other IRC channels.
