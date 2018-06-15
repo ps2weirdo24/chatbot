@@ -1,7 +1,7 @@
 {"options": {"listofmods": ["elmagnificobot", "elmagnificotaco", "drunkandsuch"],
 			 "nickname": "elmagnificobot", 
-			 "password": "oauth:89i2gcrqdo6eo237hrbqmdufh5ubcd",
-			 "client_id": "b69qxr73yp8w2qzndu0uf33kfcg4ej7", 
+			 "password": "PASSWORD GOES HERE",
+			 "client_id": "CLIENT ID GEOS HERE", 
 			 "channel": "elmagnificotaco",
 			 "log_file_name": "tacolog.txt"},
 
